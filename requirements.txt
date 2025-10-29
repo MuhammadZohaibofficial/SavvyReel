@@ -1,3 +1,3 @@
 Flask
-yt-dlp
-gunicorn
+yt-dlp>=2023.10.13
+```    Is se hum Render ko keh rahe hain ke "yt-dlp ka kam se kam October 2023 wala ya us se naya version install karna."
