@@ -145,6 +145,6 @@ def download_video():
         return jsonify({{'error': f'Processing failed: {{error_message}}'}}), 500
 
 # Railway ke liye zaroori code
-if __name__ == "__main__":
+"__main__":
     port = int(os.environ.get('PORT', 5000))
     application.run(host='0.0.0.0', port=port)
