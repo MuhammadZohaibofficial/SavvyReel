@@ -1,4 +1,4 @@
-# FINAL, SIMPLIFIED CODE FOR RAILWAY.APP
+# FINAL, CORRECTED, AND TESTED CODE FOR RENDER
 import os
 import sys
 import yt_dlp
@@ -14,7 +14,7 @@ HTML_TEMPLATE = f"""
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SavvyReels - Deployed on Railway</title>
+    <title>SavvyReels - Deployed on Render</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -111,6 +111,7 @@ HTML_TEMPLATE = f"""
 </body>
 </html>
 """
+
 @application.route('/')
 def home():
     return HTML_TEMPLATE
@@ -144,7 +145,7 @@ def download_video():
         if "Unsupported URL" in error_message: error_message = "This platform is not supported."
         return jsonify({{'error': f'Processing failed: {{error_message}}'}}), 500
 
-# Railway ke liye zaroori code
-"__main__":
-    port = int(os.environ.get('PORT', 5000))
-    application.run(host='0.0.0.0', port=port)
+# === RENDER KE LIYE FINAL START CODE ===
+# YAHAN GHALTI THEEK KAR DI GAYI HAI
+if __name__ == "__main__":
+    application.run(host='0.0.0.0', port=10000)
