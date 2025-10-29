@@ -129,7 +129,7 @@ def download_video():
     if not url:
         return jsonify({'error': 'URL not provided.'}), 400
     try:
-        with yt_dlp.YoutubeDL({'noplaylist': True, 'quiet': True}) as ydl:
+        with yt_dlp.YoutubeDL({'noplaylist': True, 'quiet': True, 'no_check_certificate': True}) as ydl:
             info = ydl.extract_info(url, download=False)
             formats = info.get('formats', [])
             options, seen_res = [], set()
