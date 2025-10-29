@@ -78,24 +78,32 @@ HTML_TEMPLATE = f"""
                         headers: {{ 'Content-Type': 'application/json' }},
                         body: JSON.stringify({{ url }}),
                     }});
-                    const data = await response.json();
-                    if (!response.ok) throw new Error(data.error);
-                    const optionsHTML = data.options.map(opt => {{
-                        const isAudio = opt.type === 'Audio';
-                        return `<a href="${{opt.url}}" target="_blank" download class="w-full text-white font-bold py-2 px-4 rounded-lg transition hover:scale-105 flex items-center justify-center gap-2 ${{isAudio ? 'bg-accent hover:bg-teal-600' : 'bg-primary hover:bg-blue-800'}}">
-                                    <i class="fas fa-${{isAudio ? 'music' : 'video'}}"></i>${{opt.quality}}
-                                </a>`;
-                    }}).join('');
-                    resultsDiv.innerHTML = `
-                        <div class="max-w-3xl mx-auto bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden text-left animate-fade-in">
-                            <div class="md:flex">
-                                <img class="h-48 w-full object-cover md:w-48" src="${{data.thumbnail}}" alt="Thumbnail">
-                                <div class="p-6 w-full">
-                                    <p class="font-bold text-lg">${{data.title}}</p>
-                                    <div class="mt-4 grid grid-cols-2 md:grid-cols-3 gap-3">${{optionsHTML}}</div>
+                    // Yahan hum response ko pehle text ke taur par check karenge
+                    const text = await response.text();
+                    try {{
+                        const data = JSON.parse(text); // Phir JSON parse karne ki koshish karenge
+                        if (!response.ok) throw new Error(data.error || 'Server returned an error');
+                        // Baaki ka code waisa he
+                        const optionsHTML = data.options.map(opt => {{
+                            const isAudio = opt.type === 'Audio';
+                            return `<a href="${{opt.url}}" target="_blank" download class="w-full text-white font-bold py-2 px-4 rounded-lg transition hover:scale-105 flex items-center justify-center gap-2 ${{isAudio ? 'bg-accent hover:bg-teal-600' : 'bg-primary hover:bg-blue-800'}}">
+                                        <i class="fas fa-${{isAudio ? 'music' : 'video'}}"></i>${{opt.quality}}
+                                    </a>`;
+                        }}).join('');
+                        resultsDiv.innerHTML = `
+                            <div class="max-w-3xl mx-auto bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden text-left animate-fade-in">
+                                <div class="md:flex">
+                                    <img class="h-48 w-full object-cover md:w-48" src="${{data.thumbnail}}" alt="Thumbnail">
+                                    <div class="p-6 w-full">
+                                        <p class="font-bold text-lg">${{data.title}}</p>
+                                        <div class="mt-4 grid grid-cols-2 md:grid-cols-3 gap-3">${{optionsHTML}}</div>
+                                    </div>
                                 </div>
-                            </div>
-                        </div>`;
+                            </div>`;
+                    }} catch (jsonError) {{
+                        // Agar text JSON nahi hai, to woh HTML error page hai
+                        throw new Error('Server error. Could not process the video.');
+                    }}
                 }} catch (error) {{
                     resultsDiv.innerHTML = `<div class="p-4 bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300 border border-red-400 rounded-lg">${{error.message}}</div>`;
                 }} finally {{
@@ -119,33 +127,33 @@ def home():
 def download_video():
     url = request.json.get('url')
     if not url:
-        return jsonify({{'error': 'URL not provided.'}}), 400
+        return jsonify({'error': 'URL not provided.'}), 400
     try:
-        with yt_dlp.YoutubeDL({{'noplaylist': True, 'quiet': True}}) as ydl:
+        with yt_dlp.YoutubeDL({'noplaylist': True, 'quiet': True}) as ydl:
             info = ydl.extract_info(url, download=False)
             formats = info.get('formats', [])
             options, seen_res = [], set()
             for f in reversed(formats):
                 res = f.get('height')
                 if res and res not in seen_res and f.get('vcodec', '').startswith('avc') and f.get('acodec') != 'none':
-                    options.append({{'quality': f'{{res}}p', 'url': f.get('url'), 'type': 'Video'}})
+                    options.append({'quality': f'{res}p', 'url': f.get('url'), 'type': 'Video'})
                     seen_res.add(res)
             best_audio = max((f for f in formats if f.get('vcodec') == 'none' and f.get('acodec') != 'none'), key=lambda x: x.get('abr', 0), default=None)
             if best_audio:
-                options.append({{'quality': 'Audio MP3', 'url': best_audio.get('url'), 'type': 'Audio'}})
+                options.append({'quality': 'Audio MP3', 'url': best_audio.get('url'), 'type': 'Audio'})
             if not options:
-                return jsonify({{'error': 'No downloadable formats found.'}}), 404
-            return jsonify({{
+                return jsonify({'error': 'No downloadable formats found.'}), 404
+            # YAHAN SAARE GHALAT BRACES THEEK KAR DIYE HAIN
+            return jsonify({
                 'title': info.get('title', 'Untitled Video'),
                 'thumbnail': info.get('thumbnail', ''),
                 'options': options
-            }})
+            })
     except Exception as e:
         error_message = str(e).split(':')[-1].strip()
         if "Unsupported URL" in error_message: error_message = "This platform is not supported."
-        return jsonify({{'error': f'Processing failed: {{error_message}}'}}), 500
+        return jsonify({'error': f'Processing failed: {error_message}'}), 500
 
 # === RENDER KE LIYE FINAL START CODE ===
-# YAHAN GHALTI THEEK KAR DI GAYI HAI
 if __name__ == "__main__":
     application.run(host='0.0.0.0', port=10000)
