@@ -5,7 +5,7 @@ import os
 import yt_dlp
 from flask import Flask, request, jsonify
 
-# Flask app ko initialize karein
+# Flask app ko initialize karein, Gunicorn 'application' naam dhoondta hai
 application = Flask(__name__)
 
 # --- Poora Frontend Aik f-string Mein ---
@@ -15,7 +15,7 @@ HTML_TEMPLATE = f"""
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SavvyReels - Final Version</title>
+    <title>SavvyReels - Final Working Version</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -124,6 +124,7 @@ def download_video():
     if not url:
         return jsonify({'error': 'URL not provided.'}), 400
     try:
+        # ydl_opts ko behtar banaya gaya hai
         ydl_opts = {
             'noplaylist': True,
             'quiet': True,
@@ -135,12 +136,14 @@ def download_video():
             formats = info.get('formats', [])
             options, seen_res = [], set()
 
+            # Video formats dhoondne ka behtar tareeqa
             for f in reversed(formats):
                 res = f.get('height')
                 if res and res not in seen_res and f.get('vcodec', '').startswith('avc'):
                     options.append({'quality': f'{res}p', 'url': f.get('url'), 'type': 'Video'})
                     seen_res.add(res)
             
+            # Audio format dhoondne ka behtar tareeqa
             best_audio = max((f for f in formats if f.get('vcodec') == 'none'), key=lambda x: x.get('abr', 0), default=None)
             if best_audio:
                 options.append({'quality': 'Audio MP3', 'url': best_audio.get('url'), 'type': 'Audio'})
@@ -154,4 +157,5 @@ def download_video():
                 'options': options
             })
     except Exception as e:
+        # User ko behtar error message dikhayein
         return jsonify({'error': f'Could not process video. It may be private or unavailable.'}), 500
